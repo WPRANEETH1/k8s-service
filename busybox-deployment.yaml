@@ -70,12 +70,12 @@ spec:
         volumeMounts:
           - name: config-volume
             mountPath: /etc/config  # Mount the configMap at /etc/config
-          # - name: efs-volume
-          #   mountPath: /mnt/efs
+          - name: efs-volume
+            mountPath: /mnt/efs
       volumes:
         - name: config-volume
           configMap:
             name: busybox-config
-        # - name: efs-volume
-        #   persistentVolumeClaim:
-        #     claimName: busybox-pvc
+        - name: efs-volume
+          persistentVolumeClaim:
+            claimName: busybox-pvc
