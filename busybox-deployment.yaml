@@ -1,0 +1,81 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: busybox
+  name: busybox
+  namespace: maybank-prod
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: busybox
+  strategy:
+    rollingUpdate:
+      maxSurge: 25%
+      maxUnavailable: 25%
+    type: RollingUpdate  
+  template:
+    metadata:
+      labels:
+        app: busybox
+    spec:
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+              - matchExpressions:
+                  - key: topology.kubernetes.io/zone
+                    operator: In
+                    values:
+                      - us-east-2a
+                      - us-east-2b
+                      - us-east-2c
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+            - weight: 100
+              podAffinityTerm:
+                labelSelector:
+                  matchExpressions:
+                    - key: app
+                      operator: In
+                      values:
+                        - busybox
+                topologyKey: topology.kubernetes.io/zone
+      containers:
+      - image: busybox
+        command: ["sleep", "3600"]
+        env:
+        - name: USERNAME
+          valueFrom:
+            secretKeyRef:
+              name: busybox-secret
+              key: username
+        - name: PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: busybox-secret
+              key: password 
+        resources:
+          requests:
+            memory: "600Mi"
+            cpu: "300m"
+          limits:
+            memory: "800Mi"
+            cpu: "600m"
+        name: busybox
+        ports:
+        - containerPort: 80 # This port is unnecessary in BusyBox.
+          protocol: TCP
+        volumeMounts:
+          - name: config-volume
+            mountPath: /etc/config  # Mount the configMap at /etc/config
+          # - name: efs-volume
+          #   mountPath: /mnt/efs
+      volumes:
+        - name: config-volume
+          configMap:
+            name: busybox-config
+        # - name: efs-volume
+        #   persistentVolumeClaim:
+        #     claimName: busybox-pvc
